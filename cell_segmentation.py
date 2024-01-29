@@ -1,4 +1,4 @@
-#29/01/2024 by Shayan and Dremaro
+#Started the 29/01/2024 by Shayan and Dremaro
 
 
 
@@ -19,15 +19,32 @@ from scipy.stats import kurtosis, skew
 
 import matplotlib.pyplot as plt
 
+import PIL
 
 
 
+def getOneImage(image_path):
+    # Open the image file
+    im = PIL.Image.open(image_path)
+    
+    # Convert the image to a numpy array
+    I = np.array(im)
+    
+    return I
+
+"""
+TIP :
+In Python strings, the backslash \ is an escape character, which is used to introduce special character sequences. For example, \n is a newline, and \t is a tab.
+
+If you want to include a literal backslash in a string, you need to escape it by using two backslashes \\.
+
+Alternatively, you can use raw strings, where backslashes are treated as literal characters. You can create a raw string by prefixing the string with r.
+"""
 
 
-
-
-
-
+image = getOneImage(r"photos\01\t000.tif")
+plt.imshow(image)
+plt.show()
 
 
 
