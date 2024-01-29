@@ -88,12 +88,12 @@ def getBulkAnnotationAsDf(screenID, conn):
     return dfAnn, count
 
 def getOneImage(conn,weid,pos=None):
-    we = conn.getObject('Well',weid)
-    if pos==None:
-        pos=random.choice(range(we.countWellSample()))  # one random field of that well
+    we = conn.getObject('Well',weid) # retrieves a Well object from the OMERO server using the well ID 'weid'.
+    if pos==None: # if no position is specified, we take a random one
+        pos=random.choice(range(we.countWellSample()))
         
-    im = we.getImage(pos)   
-    pix = im.getPrimaryPixels()
+    im = we.getImage(pos) # retrieves the image at position 'pos' in the well 'we'
+    pix = im.getPrimaryPixels() 
     I1=pix.getPlane(0,0,0)
     I2=pix.getPlane(0,1,0)
     I3=pix.getPlane(0,2,0)
@@ -192,23 +192,27 @@ plt.colorbar()
 #endregion
 
 
-#22
+#region : 22
 #initial seg: plain thresholding of dapi channel
-otsu=filters.threshold_otsu(I[:,:,0])
-dapiSeg=measure.label(I[:,:,0]>otsu)
+otsu=filters.threshold_otsu(I[:,:,0]) # calculates an optimal threshold value (well known method)
+dapiSeg=measure.label(I[:,:,0]>otsu) # apply the threshold value to the image to get a binary image
 
-plt.figure(figsize=(15,15))
-plt.imshow(dapiSeg)
+#plt.figure(figsize=(15,15))
+#plt.imshow(dapiSeg)
+#endregion
 
-#23
+#region : 23,24,25
+# this gives annotations for each object in the image and store these into a dictionary : rp
 rp=measure.regionprops_table(dapiSeg,properties=('label', 'bbox','area','moments_hu','centroid','bbox'))
+# This line creates a pandas DataFrame from the dictionary rp. Each key-value pair in the dictionary becomes a column in the DataFrame, with the key as the column name and the values as the column data.
 nucs=DataFrame(rp)
 
-#24
 nucs.head()
-
-#25
 rp=measure.regionprops(dapiSeg)
+#endregion
+
+
+
 #Also measure.regionprops_table()
 
 label=[]
@@ -235,11 +239,29 @@ for r in rp:
         print('whut')
         continue
 
+#26
 nucs=DataFrame({'labels':label,'nucleus_bbox':bbox,'nucleus_center':center,'nucleus_area':area,'nucleus_eccentricity':eccentricity,'nucleus_equivalent_diameter':equivalent_diameter,'nucleus_moments_hu':moments_hu,'nucleus_perimeter':perimeter,'nucleus_solidity':solidity})
+#27
+nucs.area.hist()
+#28
+nucs=nucs[nucs.area>400]
+#29
+dfAnn['Channels'][0]
+#30
+nrow=np.random.choice(len(nucs))
+bb=nucs[['bbox-0','bbox-1','bbox-2','bbox-3']].iloc[nrow]
+            
+fig, axes = plt.subplots(1, 5,figsize=(18, 3))
+axes[0].imshow(I[bb[0]:bb[2],bb[1]:bb[3],0])
+axes[1].imshow(I[bb[0]:bb[2],bb[1]:bb[3],1])
+axes[2].imshow(I[bb[0]:bb[2],bb[1]:bb[3],2])
+axes[3].imshow(I[bb[0]:bb[2],bb[1]:bb[3],3])
+axes[4].imshow(I[bb[0]:bb[2],bb[1]:bb[3],4])
+
+for x in axes.ravel():
+    x.axis("off")
 
 
-
-# 
 # ## Segment cells
 # 
 # 3. Similarly, try to segment the cell body using the third channel (index 2)
@@ -253,5 +275,188 @@ nucs=DataFrame({'labels':label,'nucleus_bbox':bbox,'nucleus_center':center,'nucl
 # 4. Manually look at segmented objects for selected phenotypes to check that the segmentation is robust.
 # 
 # 
+'''
+#region : 31
+amaskRaw=I[:,:,2]> filters.threshold_otsu(I[:,:,2])
+amask=morphology.closing(binary_fill_holes(I[:,:,2]> filters.threshold_otsu(I[:,:,2])), morphology.square(3))
+
+plt.figure(figsize=(15,15))
+plt.imshow(amaskRaw)
+plt.figure(figsize=(15,15))
+plt.imshow(amask)
+#endregion
+
+#region : 32
+#watershed of channel 2 for cell outline, seeds as dapi centers
+markers=np.zeros(I.shape[0:2])
+for i,r in nucs.iterrows():
+    markers[int(r['centroid-0']),int(r['centroid-1'])]=r.label
+
+seg=segmentation.watershed(-I[:,:,2],markers=markers,mask=amask)
+
+seg_visu=label2rgb(seg,image=I[:,:,2])
+
+plt.figure(figsize=(15,15))
+plt.imshow(seg)
+
+plt.figure(figsize=(15,15))
+plt.imshow(seg_visu)
+#endregion
+
+#region : 33
+#cytoSegTouchesBorders=seg-segmentation.clear_border(seg,buffer_size=3) #watershed add a border of 3
+#cytoSegTouchesBorders=np.unique(cytoSegTouchesBorders[cytoSegTouchesBorders>0]-1) #row in df is zero based
+
+rp2=measure.regionprops(seg, coordinates='rc')
+label=[]
+bbox=[]
+center=[]
+area=[]
+eccentricity=[]
+equivalent_diameter=[]
+moments_hu=[]
+perimeter=[]
+solidity=[]
+for r in rp2:
+    try:
+        label.append(r.label)
+        bbox.append(r.bbox)
+        center.append(r.centroid)
+        area.append(r.area)
+        eccentricity.append(r.eccentricity)
+        equivalent_diameter.append(r.equivalent_diameter)
+        moments_hu.append(r.moments_hu)
+        perimeter.append(r.perimeter)
+        solidity.append(r.solidity)
+    except:
+        print('whut')
+        continue
+
+cells=DataFrame({'label':label,'cell_bbox':bbox,'cell_center':center,'cell_area':area,'cell_eccentricity':eccentricity,'cell_equivalent_diameter':equivalent_diameter,'cell_moments_hu':moments_hu,'cell_perimeter':perimeter,'cell_solidity':solidity})
+dfCells=merge(nucs,cells,how='outer',on='label')
+
+dfCells.set_index('label',inplace=True)
+
+#dfCells.drop(cytoSegTouchesBorders,inplace=True)
+#endregion
+
+#region : 34
+nrow=np.random.choice(len(dfCells))
+bb=dfCells.cell_bbox.iloc[nrow]
+            
+fig, axes = plt.subplots(1, 5,figsize=(18, 3))
+axes[0].imshow(I[bb[0]:bb[2],bb[1]:bb[3],0])
+axes[1].imshow(I[bb[0]:bb[2],bb[1]:bb[3],1])
+axes[2].imshow(I[bb[0]:bb[2],bb[1]:bb[3],2])
+axes[3].imshow(I[bb[0]:bb[2],bb[1]:bb[3],3])
+axes[4].imshow(I[bb[0]:bb[2],bb[1]:bb[3],4])
+
+for x in axes.ravel():
+    x.axis("off")
+
+#endregion
+    
+#region : 35
+def segImage(I,param={}):
+    #initial seg: plain thresholding of dapi channel
+    otsu=filters.threshold_otsu(I[:,:,0])
+    dapiSeg=measure.label(I[:,:,0]>otsu)
+
+    dapiSegTouchesBorders=dapiSeg-segmentation.clear_border(dapiSeg)
+    dapiSegTouchesBorders=np.unique(dapiSegTouchesBorders.flatten())
+    #rp=skimes.regionprops(segmentation.clear_border(skimes.label(I[:,:,0]>otsu)))
+    rp=measure.regionprops(dapiSeg, coordinates='rc') #better removing them latter?
+    label=[]
+    bbox=[]
+    center=[]
+    area=[]
+    eccentricity=[]
+    equivalent_diameter=[]
+    moments_hu=[]
+    perimeter=[]
+    solidity=[]
+    for r in rp:
+        try:
+            label.append(r.label)
+            bbox.append(r.bbox)
+            center.append(r.centroid)
+            area.append(r.area)
+            eccentricity.append(r.eccentricity)
+            equivalent_diameter.append(r.equivalent_diameter)
+            moments_hu.append(r.moments_hu)
+            perimeter.append(r.perimeter)
+            solidity.append(r.solidity)
+        except:
+            print('whut')
+            continue
+
+    nucs=DataFrame({'labels':label,'nucleus_bbox':bbox,'nucleus_center':center,'nucleus_area':area,'nucleus_eccentricity':eccentricity,'nucleus_equivalent_diameter':equivalent_diameter,'nucleus_moments_hu':moments_hu,'nucleus_perimeter':perimeter,'nucleus_solidity':solidity})
+
+
+    #watershed of channel 2 for cell outline, seeds as dapi centers
+    markers=np.zeros(I.shape[0:2])
+    for i,r in nucs.iterrows():
+        markers[int(r.nucleus_center[0]),int(r.nucleus_center[1])]=r.labels
+
+    amask=binary_closing(binary_fill_holes(I[:,:,2]> filters.threshold_otsu(I[:,:,2])),iterations=3)
+    seg=segmentation.watershed(-I[:,:,2],markers=markers,mask=amask)
+
+    cytoSegTouchesBorders=seg-segmentation.clear_border(seg,buffer_size=3) #watershed add a border of 3
+    cytoSegTouchesBorders=np.unique(cytoSegTouchesBorders[cytoSegTouchesBorders>0]-1) #row in df is zero based
+
+    rp2=measure.regionprops(seg, coordinates='rc')
+    label=[]
+    bbox=[]
+    center=[]
+    area=[]
+    eccentricity=[]
+    equivalent_diameter=[]
+    moments_hu=[]
+    perimeter=[]
+    solidity=[]
+    for r in rp2:
+        try:
+            label.append(r.label)
+            bbox.append(r.bbox)
+            center.append(r.centroid)
+            area.append(r.area)
+            eccentricity.append(r.eccentricity)
+            equivalent_diameter.append(r.equivalent_diameter)
+            moments_hu.append(r.moments_hu)
+            perimeter.append(r.perimeter)
+            solidity.append(r.solidity)
+        except:
+            print('whut')
+            continue
+
+    cells=DataFrame({'labels':label,'cell_bbox':bbox,'cell_center':center,'cell_area':area,'cell_eccentricity':eccentricity,'cell_equivalent_diameter':equivalent_diameter,'cell_moments_hu':moments_hu,'cell_perimeter':perimeter,'cell_solidity':solidity})
+
+    dfCells=merge(nucs,cells,how='outer',on='labels')
+    dfCells.drop(cytoSegTouchesBorders,inplace=True)
+    
+    seg_visu=label2rgb(segmentation.clear_border(seg,buffer_size=3),image=I[:,:,2])
+
+    return dfCells,seg,seg_visu
+#endregion
+
+#region : 36
+aphe=np.random.choice(range(1,phenotype_count+1))
+aphe=7
+weid=dfAnn[dfAnn[u'Phenotype '+str(aphe)]!=''].sample()['Well'].values
+im=getOneImage(conn,weid)
+dfCells,seg,segVisu=segImage(I)
+
+plt.figure(figsize=(15,15))
+plt.imshow(segVisu)
+
+#endregion
+
+'''
+
+
+
+
+
+
 
 
