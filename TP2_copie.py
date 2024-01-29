@@ -118,12 +118,10 @@ conn = connect(host, username, password)
 dfAnn, phenotype_count = getBulkAnnotationAsDf(screenId, conn)
 dfAnn.head()
 
-
-
-
-
 weid=dfAnn[dfAnn['Control Type']=='negative control'].sample()['Well'].values
 I=getOneImage(conn,weid)
+
+
 
 
 
@@ -155,7 +153,7 @@ I[:,:,0]
 # 2. Use skimage.measure.label and skimage.measure.regionprops to extract a data frame of nucleis objects with preliminary geometric measurement. Use simple manual threshold to remove outliers objects, for example those with too small areas
 # 
 
-
+#region : what I tried during the TP
 
 # Survival notes !!!!
 # this TP is to link with the python code sections in the bio583_2_slides course
@@ -170,7 +168,7 @@ for i in range(0,5):
         for c in ligne:
             el = ligne[c]
             if el > treshold:
-                I = 5000
+                el = 5000
             else:
                 el = 0
     ax[i].imshow(I_s[:,:,i][zoomx[0]:zoomx[1],zoomy[0]:zoomy[1]])
@@ -191,6 +189,54 @@ plt.imshow(noyaux_I, cmap='gray')
 plt.colorbar()
 
 #1080*1080
+#endregion
+
+
+#22
+#initial seg: plain thresholding of dapi channel
+otsu=filters.threshold_otsu(I[:,:,0])
+dapiSeg=measure.label(I[:,:,0]>otsu)
+
+plt.figure(figsize=(15,15))
+plt.imshow(dapiSeg)
+
+#23
+rp=measure.regionprops_table(dapiSeg,properties=('label', 'bbox','area','moments_hu','centroid','bbox'))
+nucs=DataFrame(rp)
+
+#24
+nucs.head()
+
+#25
+rp=measure.regionprops(dapiSeg)
+#Also measure.regionprops_table()
+
+label=[]
+bbox=[]
+center=[]
+area=[]
+eccentricity=[]
+equivalent_diameter=[]
+moments_hu=[]
+perimeter=[]
+solidity=[]
+for r in rp:
+    try:
+        label.append(r.label)
+        bbox.append(r.bbox)
+        center.append(r.centroid)
+        area.append(r.area)
+        eccentricity.append(r.eccentricity)
+        equivalent_diameter.append(r.equivalent_diameter)
+        moments_hu.append(r.moments_hu)
+        perimeter.append(r.perimeter)
+        solidity.append(r.solidity)
+    except:
+        print('whut')
+        continue
+
+nucs=DataFrame({'labels':label,'nucleus_bbox':bbox,'nucleus_center':center,'nucleus_area':area,'nucleus_eccentricity':eccentricity,'nucleus_equivalent_diameter':equivalent_diameter,'nucleus_moments_hu':moments_hu,'nucleus_perimeter':perimeter,'nucleus_solidity':solidity})
+
 
 
 # 
