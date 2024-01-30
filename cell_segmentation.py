@@ -1,5 +1,10 @@
 #Started the 29/01/2024 by Shayan and Dremaro
 
+# Important methods run by the program:
+#  - Otsu's trhesholding method
+#  - Watershed segmentation
+
+
 
 
 ############################## Import ##########################################
@@ -43,18 +48,18 @@ Alternatively, you can use raw strings, where backslashes are treated as literal
 
 image = getOneImage(r"photos\01\t000.tif")
 
-otsu = filters.threshold_otsu(image)
-dapiSeg = measure.label(image > otsu)
-dico_annotations=measure.regionprops_table(dapiSeg,properties=('label', 'bbox','area','centroid'))
+t_image = image > filters.threshold_otsu(image)
+ft_image = morphology.closing(binary_fill_holes(t_image), morphology.square(3)) # closing holes and removing small objects
+dico_notes = measure.regionprops_table(ft_image,properties=('label', 'bbox','area','centroid'))
 '''
 'label': return the label of the region.
 'bbox': return the bounding box of the region. The bounding box is represented as a tuple of the form (min_row, min_col, max_row, max_col).
 'area': return the total area of the region.
 'centroid': return the centroid of the region, represented as (row_centroid, col_centroid).
 '''
-nucs=DataFrame(dico_annotations)
+nucs=DataFrame(dico_notes)
 print(nucs.head())
-rp=measure.regionprops(dapiSeg) # c'est une liste d'objet (représentant chaque cellule identifiée) contenant les propriétés 
+rp=measure.regionprops(ft_image) # c'est une liste d'objet (représentant chaque cellule identifiée) contenant les propriétés 
 
 label=[]
 bbox=[]
@@ -71,20 +76,27 @@ for r in rp: #on parcour la liste d'objet
         continue
 
 nucs=DataFrame({'labels':label,'nucleus_bbox':bbox,'nucleus_center':center,'nucleus_area':area}) # on crée un dataframe avec les listesw
-#print(nucs.area.hist())
-nucs=nucs[nucs.area>400]
+print(nucs.head())
+nucs=nucs[nucs.nucleus_area>400]
 
-print(dfAnn['Channels'][0])
 
 nrow=np.random.choice(len(nucs))
-bb=nucs[['bbox-0','bbox-1','bbox-2','bbox-3']].iloc[nrow]
-
+bb=nucs['nucleus_bbox'].iloc[nrow]
 fig, (ax1, ax2, ax3) = plt.subplots(1, 3)
 ax1.imshow(image)
-ax2.imshow(dapiSeg)
-ax3.imshow(I[bb[0]:bb[2],bb[1]:bb[3]])
+ax2.imshow(t_image)
+ax3.imshow(ft_image)
+#ax3.imshow(image[bb[0]:bb[2],bb[1]:bb[3]])
 ax1.set_title('Original')
 ax2.set_title('Contrasted')
-#plt.show()
+plt.show()
+
+
+
+
+
+
+
+
 
 

@@ -211,10 +211,7 @@ nucs.head()
 rp=measure.regionprops(dapiSeg)
 #endregion
 
-
-
-#Also measure.regionprops_table()
-
+#region : the rest of the answer to the question 1 and 2
 label=[]
 bbox=[]
 center=[]
@@ -260,7 +257,7 @@ axes[4].imshow(I[bb[0]:bb[2],bb[1]:bb[3],4])
 
 for x in axes.ravel():
     x.axis("off")
-
+#endregion
 
 # ## Segment cells
 # 
@@ -275,10 +272,11 @@ for x in axes.ravel():
 # 4. Manually look at segmented objects for selected phenotypes to check that the segmentation is robust.
 # 
 # 
-'''
+
 #region : 31
 amaskRaw=I[:,:,2]> filters.threshold_otsu(I[:,:,2])
-amask=morphology.closing(binary_fill_holes(I[:,:,2]> filters.threshold_otsu(I[:,:,2])), morphology.square(3))
+amask=morphology.closing(binary_fill_holes(amaskRaw), morphology.square(3)) # closing holes and removing small objects
+#amask=morphology.closing(binary_fill_holes(I[:,:,2]> filters.threshold_otsu(I[:,:,2])), morphology.square(3))
 
 plt.figure(figsize=(15,15))
 plt.imshow(amaskRaw)
@@ -451,7 +449,6 @@ plt.imshow(segVisu)
 
 #endregion
 
-'''
 
 
 
