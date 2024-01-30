@@ -45,18 +45,46 @@ image = getOneImage(r"photos\01\t000.tif")
 
 otsu = filters.threshold_otsu(image)
 dapiSeg = measure.label(image > otsu)
-dico_annotations=measure.regionprops_table(dapiSeg,properties=('label','centroid'))
+dico_annotations=measure.regionprops_table(dapiSeg,properties=('label', 'bbox','area','centroid'))
+'''
+'label': return the label of the region.
+'bbox': return the bounding box of the region. The bounding box is represented as a tuple of the form (min_row, min_col, max_row, max_col).
+'area': return the total area of the region.
+'centroid': return the centroid of the region, represented as (row_centroid, col_centroid).
+'''
 nucs=DataFrame(dico_annotations)
-#dico_annotations=measure.regionprops_table(dapiSeg,properties=('label', 'bbox','area','moments_hu','centroid'))
+print(nucs.head())
+rp=measure.regionprops(dapiSeg) # c'est une liste d'objet (représentant chaque cellule identifiée) contenant les propriétés 
 
+label=[]
+bbox=[]
+center=[]
+area=[]
+for r in rp: #on parcour la liste d'objet
+    try:
+        label.append(r.label) #on ajoute les propriétés de chaque cellule dans une liste
+        bbox.append(r.bbox)
+        center.append(r.centroid)
+        area.append(r.area)
+    except:
+        print('whut')
+        continue
 
-fig, (ax1, ax2) = plt.subplots(1, 2)
+nucs=DataFrame({'labels':label,'nucleus_bbox':bbox,'nucleus_center':center,'nucleus_area':area}) # on crée un dataframe avec les listesw
+#print(nucs.area.hist())
+nucs=nucs[nucs.area>400]
+
+print(dfAnn['Channels'][0])
+
+nrow=np.random.choice(len(nucs))
+bb=nucs[['bbox-0','bbox-1','bbox-2','bbox-3']].iloc[nrow]
+
+fig, (ax1, ax2, ax3) = plt.subplots(1, 3)
 ax1.imshow(image)
 ax2.imshow(dapiSeg)
+ax3.imshow(I[bb[0]:bb[2],bb[1]:bb[3]])
 ax1.set_title('Original')
 ax2.set_title('Contrasted')
-print(dapiSeg)
-
-plt.show()
+#plt.show()
 
 
