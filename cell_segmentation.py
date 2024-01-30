@@ -41,10 +41,22 @@ If you want to include a literal backslash in a string, you need to escape it by
 Alternatively, you can use raw strings, where backslashes are treated as literal characters. You can create a raw string by prefixing the string with r.
 """
 
-
 image = getOneImage(r"photos\01\t000.tif")
-plt.imshow(image)
-plt.show()
 
+otsu = filters.threshold_otsu(image)
+dapiSeg = measure.label(image > otsu)
+dico_annotations=measure.regionprops_table(dapiSeg,properties=('label','centroid'))
+nucs=DataFrame(dico_annotations)
+#dico_annotations=measure.regionprops_table(dapiSeg,properties=('label', 'bbox','area','moments_hu','centroid'))
+
+
+fig, (ax1, ax2) = plt.subplots(1, 2)
+ax1.imshow(image)
+ax2.imshow(dapiSeg)
+ax1.set_title('Original')
+ax2.set_title('Contrasted')
+print(dapiSeg)
+
+plt.show()
 
 
