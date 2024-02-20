@@ -5,7 +5,6 @@ This is the repository of the dataScience project Shayan and Alexandre are worki
 Let's mark it down
 
 # New inspirational code resources
-
 https://pypi.org/project/fingerflow/
 https://stackoverflow.com/questions/40119182/fingerprint-enhancement-in-python
 https://github.com/mehmetaydar/fingerprint-alignment
