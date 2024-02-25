@@ -68,8 +68,8 @@ def fingerprint_pipline(input_img):
 
 if __name__ == '__main__':
     # open images
-    img_dir = './sample_inputs/*'
-    output_dir = './output/'
+    img_dir = './SOCO_our_work/sample_inputs/*'
+    output_dir = './SOCO_our_work/output/'
     def open_images(directory):
         images_paths = glob(directory)
         return np.array([cv.imread(img_path,0) for img_path in images_paths])
