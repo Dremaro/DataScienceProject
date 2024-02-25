@@ -14,6 +14,7 @@ from utils.skeletonize import skeletonize
 
 
 def fingerprint_pipline(input_img):
+    print('enterd pipeline')
     block_size = 16
 
     # pipe line picture re https://www.cse.iitk.ac.in/users/biometrics/pages/111.JPG
@@ -60,15 +61,17 @@ def fingerprint_pipline(input_img):
 
 
 if __name__ == '__main__':
+    
+
     # open images
-    img_dir = './sample_inputs/*'
-    output_dir = './output/'
+    img_dir = './SOCO_original_code/sample_inputs/*'
+    output_dir = './SOCO_original_code/output/'
     def open_images(directory):
         images_paths = glob(directory)
         return np.array([cv.imread(img_path,0) for img_path in images_paths])
 
     images = open_images(img_dir)
-
+    
     # image pipeline
     os.makedirs(output_dir, exist_ok=True)
     for i, img in enumerate(tqdm(images)):
