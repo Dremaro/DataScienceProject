@@ -1,5 +1,6 @@
 import cv2 as cv
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 def minutiae_at(pixels, i, j, kernel_size):
@@ -35,7 +36,7 @@ def minutiae_at(pixels, i, j, kernel_size):
         crossings = 0
         for k in range(0, len(values)-1):
             crossings += abs(values[k] - values[k + 1])
-        crossings //= 2
+        crossings //= 2   # division partie entière
 
         # if pixel on boundary are crossed with the ridge once, then it is a possible ridge ending
         # if pixel on boundary are crossed with the ridge three times, then it is a ridge bifurcation
@@ -56,11 +57,14 @@ def calculate_minutiaes(im, kernel_size=3):
     result = cv.cvtColor(im, cv.COLOR_GRAY2RGB)
     colors = {"ending" : (150, 0, 0), "bifurcation" : (0, 150, 0)}
 
+    coord_minutiae = []
     # iterate each pixel minutia
     for i in range(1, x - kernel_size//2):
         for j in range(1, y - kernel_size//2):
             minutiae = minutiae_at(biniry_image, j, i, kernel_size)
             if minutiae != "none":
+                coord_minutiae.append((i, j, minutiae))
                 cv.circle(result, (i,j), radius=2, color=colors[minutiae], thickness=2)
+    
 
-    return result
+    return (result, coord_minutiae)

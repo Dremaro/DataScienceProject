@@ -14,15 +14,6 @@ from tqdm import tqdm
 from utils.skeletonize import skeletonize
 
 
-datalink = {'input':0,
-            'normalized':1,
-            'segmented':2,
-            'orientation':3,
-            'gabor':4,
-            'thin':5,
-            'minutias':6,
-            'singularities':7}
-
 
 def fingerprint_pipline(input_img):
     block_size = 16
@@ -62,23 +53,35 @@ def fingerprint_pipline(input_img):
     thin_image = skeletonize(gabor_img)
 
     # minutias
-    minutias = calculate_minutiaes(thin_image)
-    #plt.imshow(minutias)
-    #plt.show()
+    (minutias, coordminutias) = calculate_minutiaes(thin_image)
 
     # singularities
     singularities_img = calculate_singularities(thin_image, angles, 1, block_size, mask)
 
-    
+
 
     # visualize pipeline stage by stage
-    # output_imgs = [input_img, normalized_img, segmented_img, orientation_img, gabor_img, thin_image, minutias, singularities_img]
+    output_imgs = [input_img, normalized_img, segmented_img, orientation_img, gabor_img, thin_image, minutias, singularities_img]
+    output_data = [coordminutias]
+    
     # for i in range(len(output_imgs)):
     #     if len(output_imgs[i].shape) == 2:
     #         output_imgs[i] = cv.cvtColor(output_imgs[i], cv.COLOR_GRAY2RGB)
     # results = np.concatenate([np.concatenate(output_imgs[:4], 1), np.concatenate(output_imgs[4:], 1)]).astype(np.uint8)
 
-    return results
+    # return results
+    return output_imgs, output_data
+
+
+datalink = {'input':0,
+            'normalized':1,
+            'segmented':2,
+            'orientation':3,
+            'gabor':4,
+            'thin':5,
+            'minutias':6,
+            'singularities':7}
+
 
 
 if __name__ == '__main__':
@@ -94,6 +97,14 @@ if __name__ == '__main__':
     # image pipeline
     os.makedirs(output_dir, exist_ok=True)
     for i, img in enumerate(tqdm(images)):
-        results = fingerprint_pipline(img)
-        cv.imwrite(output_dir+str(i)+'.png', results)
-        # cv.imshow('image pipeline', results); cv.waitKeyEx()
+        output_imgs, outpu_data = fingerprint_pipline(img)
+        fig, axs = plt.subplots(2, 4, figsize=(15, 15))
+        for j, ax in enumerate(axs.flatten()):
+            if j < len(output_imgs):
+                ax.imshow(output_imgs[j], cmap='gray')
+                ax.set_title(list(datalink.keys())[j])
+            else:
+                ax.axis('off')
+        plt.savefig(output_dir+str(i)+'.png')
+
+
