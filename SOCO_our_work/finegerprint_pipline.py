@@ -14,6 +14,16 @@ from tqdm import tqdm
 from utils.skeletonize import skeletonize
 
 
+datalink = {'input':0,
+            'normalized':1,
+            'segmented':2,
+            'orientation':3,
+            'gabor':4,
+            'thin':5,
+            'minutias':6,
+            'singularities':7}
+
+
 def fingerprint_pipline(input_img):
     block_size = 16
 
@@ -53,16 +63,20 @@ def fingerprint_pipline(input_img):
 
     # minutias
     minutias = calculate_minutiaes(thin_image)
+    #plt.imshow(minutias)
+    #plt.show()
 
     # singularities
     singularities_img = calculate_singularities(thin_image, angles, 1, block_size, mask)
 
+    
+
     # visualize pipeline stage by stage
-    output_imgs = [input_img, normalized_img, segmented_img, orientation_img, gabor_img, thin_image, minutias, singularities_img]
-    for i in range(len(output_imgs)):
-        if len(output_imgs[i].shape) == 2:
-            output_imgs[i] = cv.cvtColor(output_imgs[i], cv.COLOR_GRAY2RGB)
-    results = np.concatenate([np.concatenate(output_imgs[:4], 1), np.concatenate(output_imgs[4:], 1)]).astype(np.uint8)
+    # output_imgs = [input_img, normalized_img, segmented_img, orientation_img, gabor_img, thin_image, minutias, singularities_img]
+    # for i in range(len(output_imgs)):
+    #     if len(output_imgs[i].shape) == 2:
+    #         output_imgs[i] = cv.cvtColor(output_imgs[i], cv.COLOR_GRAY2RGB)
+    # results = np.concatenate([np.concatenate(output_imgs[:4], 1), np.concatenate(output_imgs[4:], 1)]).astype(np.uint8)
 
     return results
 
@@ -76,10 +90,6 @@ if __name__ == '__main__':
         return np.array([cv.imread(img_path,0) for img_path in images_paths])
     
     images = open_images(img_dir)
-
-    # show the first image
-    plt.imshow(images[0], cmap='gray')
-    plt.show()
 
     # image pipeline
     os.makedirs(output_dir, exist_ok=True)
