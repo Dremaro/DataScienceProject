@@ -2,6 +2,7 @@ import cv2 as cv
 from glob import glob
 import os
 import numpy as np
+import matplotlib.pyplot as plt
 from utils.poincare import calculate_singularities
 from utils.segmentation import create_segmented_and_variance_images
 from utils.normalization import normalize
@@ -73,8 +74,12 @@ if __name__ == '__main__':
     def open_images(directory):
         images_paths = glob(directory)
         return np.array([cv.imread(img_path,0) for img_path in images_paths])
-
+    
     images = open_images(img_dir)
+
+    # show the first image
+    plt.imshow(images[0], cmap='gray')
+    plt.show()
 
     # image pipeline
     os.makedirs(output_dir, exist_ok=True)
