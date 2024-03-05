@@ -14,6 +14,17 @@ from tqdm import tqdm
 from utils.skeletonize import skeletonize
 
 
+def open_images(directory):
+    images_paths = glob(directory)
+    return np.array([cv.imread(img_path,0) for img_path in images_paths])
+
+def write_list_to_file(my_list, filename):
+    with open(filename, 'w') as f:
+        for item in my_list:
+            f.write("%s\n" % item)
+
+
+
 
 def fingerprint_pipline(input_img):
     block_size = 16
@@ -81,30 +92,74 @@ datalink = {'input':0,
             'thin':5,
             'minutias':6,
             'singularities':7}
-
+create_minutiae_dtb = True
+print_output = False
+normal = False
 
 
 if __name__ == '__main__':
-    # open images
-    img_dir = './SOCO_our_work/sample_inputs/*'
-    output_dir = './SOCO_our_work/output/'
-    def open_images(directory):
-        images_paths = glob(directory)
-        return np.array([cv.imread(img_path,0) for img_path in images_paths])
     
-    images = open_images(img_dir)
+    if create_minutiae_dtb:
+        ################ create minutiae database ################
+        print('Creating minutiae database')
+        # open images
+        input_dtb_dir = './SOCO_our_work/sample_inputs/*'
+        output_dtb_dir = './Zd_fingerprint_dtb/'
 
-    # image pipeline
-    os.makedirs(output_dir, exist_ok=True)
-    for i, img in enumerate(tqdm(images)):
-        output_imgs, outpu_data = fingerprint_pipline(img)
-        fig, axs = plt.subplots(2, 4, figsize=(15, 15))
-        for j, ax in enumerate(axs.flatten()):
-            if j < len(output_imgs):
-                ax.imshow(output_imgs[j], cmap='gray')
-                ax.set_title(list(datalink.keys())[j])
-            else:
-                ax.axis('off')
-        plt.savefig(output_dir+str(i)+'.png')
+        images = open_images(input_dtb_dir)
+        # image pipeline
+        os.makedirs(output_dtb_dir, exist_ok=True)
+        for i, img in enumerate(tqdm(images)):
+            output_imgs, output_data = fingerprint_pipline(img)
+            cv.imwrite(output_dtb_dir+str(i)+'.png', output_imgs[datalink['minutias']])
+            write_list_to_file(output_data, output_dtb_dir+str(i)+'.txt')
+        
+        ################ create fingerprint2match ################
+        print('Creating fingerprint2match')
+        #open image
+        input_match_dir = './SOCO_our_work/sample_2match/*'
+        output_match_dir = './Z_fingerprint2match/'
+        images = open_images(input_match_dir)
+        # image pipeline
+        os.makedirs(output_match_dir, exist_ok=True)
+        for i, img in enumerate(tqdm(images)):
+            output_imgs, output_data = fingerprint_pipline(img)
+            cv.imwrite(output_match_dir+str(i)+'.png', output_imgs[datalink['minutias']])
+            write_list_to_file(output_data, output_match_dir+str(i)+'.txt')
+
+
+
+    if print_output:
+        # open images
+        img_dir = './SOCO_our_work/sample_inputs/*'
+        output_dir = './SOCO_our_work/output/'
+
+        images = open_images(img_dir)
+        # image pipeline
+        os.makedirs(output_dir, exist_ok=True)
+        for i, img in enumerate(tqdm(images)):
+            output_imgs, outpu_data = fingerprint_pipline(img)
+            fig, axs = plt.subplots(2, 4, figsize=(15, 15))
+            for j, ax in enumerate(axs.flatten()):
+                if j < len(output_imgs):
+                    ax.imshow(output_imgs[j], cmap='gray')
+                    ax.set_title(list(datalink.keys())[j])
+                else:
+                    ax.axis('off')
+            plt.savefig(output_dir+str(i)+'.png')
+    
+    if normal:
+        # open images
+        img_dir = './SOCO_our_work/sample_inputs/*'
+        output_dir = './SOCO_our_work/output/'
+
+        images = open_images(img_dir)
+
+        # image pipeline
+        os.makedirs(output_dir, exist_ok=True)
+        for i, img in enumerate(tqdm(images)):
+            results = fingerprint_pipline(img)
+            cv.imwrite(output_dir+str(i)+'.png', results)
+            # cv.imshow('image pipeline', results); cv.waitKeyEx()
 
 
