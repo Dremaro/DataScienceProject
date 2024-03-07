@@ -11,26 +11,29 @@ def calculate_angles(im, W, smoth=False):
     :param W: int width of the ridge
     :return: array
     """
+    # These are lambda functions (inline defined functions)
     j1 = lambda x, y: 2 * x * y
     j2 = lambda x, y: x ** 2 - y ** 2
     j3 = lambda x, y: x ** 2 + y ** 2
 
     (y, x) = im.shape
 
-    sobelOperator = [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]]
+    sobelOperator = [[-1, 0, 1],
+                     [-2, 0, 2],
+                     [-1, 0, 1]]
     ySobel = np.array(sobelOperator).astype(np.int)
     xSobel = np.transpose(ySobel).astype(np.int)
 
-    result = [[] for i in range(1, y, W)]
+    result = [[] for i in range(1, y, W)]  # result is then a list of y/W lists of x/W elements
 
-    Gx_ = cv.filter2D(im/125,-1, ySobel)*125
+    Gx_ = cv.filter2D(im/125,-1, ySobel)*125 # these are the gradients in x and y directions, 125 is a normalization factor
     Gy_ = cv.filter2D(im/125,-1, xSobel)*125
 
     for j in range(1, y, W):
         for i in range(1, x, W):
             nominator = 0
             denominator = 0
-            for l in range(j, min(j + W, y - 1)):
+            for l in range(j, min(j + W, y - 1)):  # On parcour notre carré de taille WxW en prenant garde de ne pas dépasser les dimensions de l'image
                 for k in range(i, min(i + W , x - 1)):
                     Gx = round(Gx_[l, k])  # horizontal gradients at l, k
                     Gy = round(Gy_[l, k])  # vertial gradients at l, k
@@ -54,7 +57,7 @@ def calculate_angles(im, W, smoth=False):
 
     if smoth:
         result = smooth_angles(result)
-
+    
     return result
 
 

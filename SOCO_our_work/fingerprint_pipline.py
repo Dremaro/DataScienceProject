@@ -21,7 +21,8 @@ def open_images(directory):
 def write_list_to_file(my_list, filename):
     with open(filename, 'w') as f:
         for item in my_list:
-            f.write("%s\n" % item)
+            # f.write("%s\n" % item)
+            f.write(str(item)+'\n')
 
 
 
@@ -53,6 +54,8 @@ def fingerprint_pipline(input_img):
     angles = orientation.calculate_angles(normalized_img, W=block_size, smoth=False)
     # gives a colored images, colored depending on the orientation of the ridges
     orientation_img = orientation.visualize_angles(segmented_img, mask, angles, W=block_size)
+    #print(type(angles), angles.shape, angles.dtype)
+
 
     # find the overall frequency of ridges in Wavelet Domain
     freq = ridge_freq(normim, mask, angles, block_size, kernel_size=5, minWaveLength=5, maxWaveLength=15)
@@ -73,7 +76,7 @@ def fingerprint_pipline(input_img):
 
     # visualize pipeline stage by stage
     output_imgs = [input_img, normalized_img, segmented_img, orientation_img, gabor_img, thin_image, minutias, singularities_img]
-    output_data = [coordminutias]
+    output_data = [coordminutias, angles, thin_image]
     
     # for i in range(len(output_imgs)):
     #     if len(output_imgs[i].shape) == 2:
@@ -110,10 +113,18 @@ if __name__ == '__main__':
         # image pipeline
         os.makedirs(output_dtb_dir, exist_ok=True)
         for i, img in enumerate(tqdm(images)):
+            img_output_dir = os.path.join(output_dtb_dir, str(i))
+            os.makedirs(img_output_dir, exist_ok=True)
+
             output_imgs, output_data = fingerprint_pipline(img)
-            cv.imwrite(output_dtb_dir+str(i)+'.png', output_imgs[datalink['minutias']])
-            write_list_to_file(output_data, output_dtb_dir+str(i)+'.txt')
+            [minutiaes, angles, thin_image] = output_data
+
+            cv.imwrite(os.path.join(img_output_dir, 'image.png'), output_imgs[datalink['orientation']])
+            write_list_to_file(minutiaes, os.path.join(img_output_dir, 'minutiaes.txt'))
+            np.savetxt(os.path.join(img_output_dir, 'angles.txt'), angles)
+            np.savetxt(os.path.join(img_output_dir, 'thin_image.txt'), thin_image)
         
+
         ################ create fingerprint2match ################
         print('Creating fingerprint2match')
         #open image
@@ -123,9 +134,14 @@ if __name__ == '__main__':
         # image pipeline
         os.makedirs(output_match_dir, exist_ok=True)
         for i, img in enumerate(tqdm(images)):
+
             output_imgs, output_data = fingerprint_pipline(img)
-            cv.imwrite(output_match_dir+str(i)+'.png', output_imgs[datalink['minutias']])
-            write_list_to_file(output_data, output_match_dir+str(i)+'.txt')
+            [minutiaes, angles, thin_image] = output_data
+
+            cv.imwrite(output_match_dir+'2match_im.png', output_imgs[datalink['orientation']])
+            write_list_to_file(minutiaes, output_match_dir+'2match_minutiae.txt')
+            np.savetxt(output_match_dir+'2match_angles.txt', angles)
+            np.savetxt(output_match_dir+'2match_thin_image.txt', thin_image)
 
 
 
