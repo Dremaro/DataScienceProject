@@ -24,7 +24,18 @@ def write_list_to_file(my_list, filename):
             # f.write("%s\n" % item)
             f.write(str(item)+'\n')
 
-
+def turn_minutiae2numbers(minutiae):
+    new_minutiae = []
+    for point in minutiae:
+        new_point=[point[0], point[1], point[2]]
+        if new_point[2] == 'ending':
+            new_point[2] = 1
+        elif new_point[2] == 'bifurcation':
+            new_point[2] = 3
+        new_minutiae.append(new_point)
+    return new_minutiae
+        
+    
 
 
 def fingerprint_pipline(input_img):
@@ -95,14 +106,14 @@ datalink = {'input':0,
             'thin':5,
             'minutias':6,
             'singularities':7}
-create_minutiae_dtb = True
+create_matching_fingerprint_dtb = True
 print_output = False
 normal = False
 
 
 if __name__ == '__main__':
     
-    if create_minutiae_dtb:
+    if create_matching_fingerprint_dtb:
         ################ create minutiae database ################
         print('Creating minutiae database')
         # open images
@@ -116,13 +127,15 @@ if __name__ == '__main__':
             img_output_dir = os.path.join(output_dtb_dir, str(i))
             os.makedirs(img_output_dir, exist_ok=True)
 
-            output_imgs, output_data = fingerprint_pipline(img)
-            [minutiaes, angles, thin_image] = output_data
+            output_imgs, output_data = fingerprint_pipline(img)  # extracting treated data
+            [minutiaes, angles, thin_image] = output_data        # attributing data to variables
+            minutiaes = turn_minutiae2numbers(minutiaes)         # turning minutiae type to numbers (ending=1, bifurcation=3)
 
-            cv.imwrite(os.path.join(img_output_dir, 'image.png'), output_imgs[datalink['orientation']])
-            write_list_to_file(minutiaes, os.path.join(img_output_dir, 'minutiaes.txt'))
-            np.savetxt(os.path.join(img_output_dir, 'angles.txt'), angles)
-            np.savetxt(os.path.join(img_output_dir, 'thin_image.txt'), thin_image)
+            #cv.imwrite(os.path.join(img_output_dir, 'image.png'), output_imgs[datalink['orientation']])
+            # write_list_to_file(minutiaes, os.path.join(img_output_dir, 'minutiaes.txt'))
+            np.savetxt(os.path.join(img_output_dir, '6_minutiaes.txt') , np.array(minutiaes))
+            np.savetxt(os.path.join(img_output_dir, '3_angles.txt'), angles)
+            np.savetxt(os.path.join(img_output_dir, '5_thin_image.txt'), thin_image)
         
 
         ################ create fingerprint2match ################
@@ -137,11 +150,13 @@ if __name__ == '__main__':
 
             output_imgs, output_data = fingerprint_pipline(img)
             [minutiaes, angles, thin_image] = output_data
+            minutiaes = turn_minutiae2numbers(minutiaes)
 
-            cv.imwrite(output_match_dir+'2match_im.png', output_imgs[datalink['orientation']])
-            write_list_to_file(minutiaes, output_match_dir+'2match_minutiae.txt')
-            np.savetxt(output_match_dir+'2match_angles.txt', angles)
-            np.savetxt(output_match_dir+'2match_thin_image.txt', thin_image)
+            #cv.imwrite(output_match_dir+'2match_im.png', output_imgs[datalink['orientation']])
+            # write_list_to_file(minutiaes, output_match_dir+'2match_minutiae.txt')
+            np.savetxt(output_match_dir+'6_2match_minutiae.txt', np.array(minutiaes))
+            np.savetxt(output_match_dir+'3_2match_angles.txt', angles)
+            np.savetxt(output_match_dir+'5_2match_thin_image.txt', thin_image)
 
 
 

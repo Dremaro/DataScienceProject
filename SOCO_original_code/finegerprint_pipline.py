@@ -14,7 +14,6 @@ from utils.skeletonize import skeletonize
 
 
 def fingerprint_pipline(input_img):
-    print('enterd pipeline')
     block_size = 16
 
     # pipe line picture re https://www.cse.iitk.ac.in/users/biometrics/pages/111.JPG
