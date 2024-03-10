@@ -87,6 +87,7 @@ def fingerprint_pipline(input_img):
 
     # visualize pipeline stage by stage
     output_imgs = [input_img, normalized_img, segmented_img, orientation_img, gabor_img, thin_image, minutias, singularities_img]
+    print(output_imgs[6])
     output_data = [coordminutias, angles, thin_image]
     
     # for i in range(len(output_imgs)):
@@ -131,7 +132,7 @@ if __name__ == '__main__':
             [minutiaes, angles, thin_image] = output_data        # attributing data to variables
             minutiaes = turn_minutiae2numbers(minutiaes)         # turning minutiae type to numbers (ending=1, bifurcation=3)
 
-            #cv.imwrite(os.path.join(img_output_dir, 'image.png'), output_imgs[datalink['orientation']])
+            cv.imwrite(os.path.join(img_output_dir, '8_im.png'), output_imgs[datalink['minutias']])
             # write_list_to_file(minutiaes, os.path.join(img_output_dir, 'minutiaes.txt'))
             np.savetxt(os.path.join(img_output_dir, '6_minutiaes.txt') , np.array(minutiaes))
             np.savetxt(os.path.join(img_output_dir, '3_angles.txt'), angles)
@@ -152,7 +153,7 @@ if __name__ == '__main__':
             [minutiaes, angles, thin_image] = output_data
             minutiaes = turn_minutiae2numbers(minutiaes)
 
-            #cv.imwrite(output_match_dir+'2match_im.png', output_imgs[datalink['orientation']])
+            cv.imwrite(output_match_dir+'8_2match_im.png', output_imgs[datalink['minutias']])
             # write_list_to_file(minutiaes, output_match_dir+'2match_minutiae.txt')
             np.savetxt(output_match_dir+'6_2match_minutiae.txt', np.array(minutiaes))
             np.savetxt(output_match_dir+'3_2match_angles.txt', angles)
