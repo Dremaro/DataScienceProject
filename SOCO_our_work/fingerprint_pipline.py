@@ -81,7 +81,7 @@ def fingerprint_pipline(input_img):
     (minutias, coordminutias) = calculate_minutiaes(thin_image)
 
     # singularities
-    singularities_img, data_singularities = calculate_singularities(thin_image, angles, 1, block_size, mask)
+    (singularities_img, data_singularities) = calculate_singularities(thin_image, angles, 1, block_size, mask)
 
 
 
@@ -151,11 +151,12 @@ if __name__ == '__main__':
         for i, img in enumerate(tqdm(images)):
 
             output_imgs, output_data = fingerprint_pipline(img)
-            [minutiaes, angles, thin_image] = output_data
+            [minutiaes, angles, thin_image, data_singularities] = output_data
             
 
             cv.imwrite(output_match_dir+'8_2match_im.png', output_imgs[datalink['minutias']])
             # write_list_to_file(minutiaes, output_match_dir+'2match_minutiae.txt')
+            np.savetxt(output_match_dir+'7_2match_singularities.txt', data_singularities)
             np.savetxt(output_match_dir+'6_0_2match_minutiae.txt', minutiaes[0])
             np.savetxt(output_match_dir+'6_1_2match_minutiae.txt', minutiaes[1])
             np.savetxt(output_match_dir+'3_2match_angles.txt', angles)

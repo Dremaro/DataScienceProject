@@ -68,6 +68,7 @@ def translation_minutiae(minutiae, translation):
 
 
 
+
 def is_point_in_sector(x, y, theta1, theta2):
     """
     Determines if a point is inside a sector defined by two angles.
@@ -102,7 +103,7 @@ def is_point_in_sector(x, y, theta1, theta2):
 def distance(p1, p2):
         return sqrt((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2)
 
-def remove_border_minutiae(minutiae, thin, pourcentage = 4/5, plot = False):
+def remove_border_minutiae(minutiae, thin, pourcentage = 4/5, n_sectors = 20, plot = False):
         """
         Removes minutiae that are too close to the border of a fingerprint image.
 
@@ -134,7 +135,7 @@ def remove_border_minutiae(minutiae, thin, pourcentage = 4/5, plot = False):
         minutiae[:, 1] = minutiae[:, 1] - j_center
         
         # define the number of sectors and the half angle of each sector
-        l_theta = np.linspace(0,360,20)[:-1]*pi/180
+        l_theta = np.linspace(0,360,n_sectors)[:-1]*pi/180
         delta = l_theta[1]/2
 
         if plot:
@@ -292,10 +293,10 @@ n = 3   # number of files per fingerprint folder
 
 
 [l_input, l_normalized, l_segmented, l_orientation, l_gabor, l_thin, l_minutias, l_singularities] = extract_data(folders_dtb[5])
-minutiae = [remove_border_minutiae(l_minutias[0], l_thin, pourcentage = 3/4), remove_border_minutiae(l_minutias[1], l_thin, pourcentage = 3/4)]
+minutiae = [remove_border_minutiae(l_minutias[0], l_thin, pourcentage = 4/5, n_sectors=30, plot = True), remove_border_minutiae(l_minutias[1], l_thin, pourcentage = 4/5, n_sectors=30)]
 
 print(minutiae)
-print(rotation_minutiae(minutiae, pi/20, [0,0], show = True))
+print(rotation_minutiae(minutiae, pi/20, [0,0]))
 
 
 

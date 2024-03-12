@@ -56,13 +56,15 @@ def calculate_singularities(im, angles, tolerance, W, mask):
                 if singularity != "none":
                     cv.rectangle(result, ((j+0)*W, (i+0)*W), ((j+1)*W, (i+1)*W), colors[singularity], 3)
 
+                    n_type = 0
                     if singularity == "loop":
-                        singularity = 1
+                        n_type = 1
                     elif singularity == "delta":
-                        singularity = 2
+                        n_type = 2
                     elif singularity == "whorl":
-                        singularity = 3
-                    singularities.append(np.array([np.array([j, i]), singularity]))  ##### Il me faut pas une liste !!!!!!!!!!!!!!!!!!!
+                        n_type = 3
+                    
+                    singularities.append([(j+0.5)*W, (i+0.5)*W, n_type])    ##### Il me faut pas une liste !!!!!!!!!!!!!!!!!!!
     
     return (result, np.array(singularities))
 
