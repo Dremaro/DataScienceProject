@@ -5,6 +5,7 @@ import numpy as np
 import cv2 as cv
 from glob import glob
 from math import *
+import random as rd
 import ast  # ast is used to parse strings and find python expressions in them
 
 
@@ -13,7 +14,7 @@ import ast  # ast is used to parse strings and find python expressions in them
 #####################################    FUNCTIONS     #######################################################################################################
 ##############################################################################################################################################################
 
-def extract_data(img_folder, l_content=[3, 5, 6]):
+def extract_data(img_folder, l_content=[3, 5, 6, 7, 8]):
         l_input = []
         l_normalized = []
         l_segmented = []
@@ -28,13 +29,44 @@ def extract_data(img_folder, l_content=[3, 5, 6]):
         for i in range(len((l_outputs))):
                 if i in l_content:
                         k = l_content.index(i)
-                        # f = open(files_pathnames[i], 'r')
-                        # l = ast.literal_eval(f.readline())
-                        # l_l[i] = l
-                        # f.close()
                         l = np.loadtxt(files_pathnames[k])
-                        l_outputs[i] = l
+                        if i == 6 or i == 7:  # minutias are composed of two files... then singularities is number 8 in folder, but still 7 in l_outputs
+                                l_minutias.append(l)
+                        else:
+                                l_outputs[i] = l
         return l_outputs
+
+
+
+def rotation_minutiae(minutiae, angle, rotation_center, show = False):
+        x = minutiae[1][:, 0]
+        y = minutiae[1][:, 1]
+        if show:
+                plt.plot(x, y, 'ro')
+                plt.gca().invert_yaxis()
+        x1 = x - rotation_center[0]
+        y1 = y - rotation_center[1]
+        # multplication by the rotation matrix
+        x_rot = x1*cos(angle) - y1*sin(angle) + rotation_center[0]
+        y_rot = x1*sin(angle) + y1*cos(angle) + rotation_center[1]
+        x_pixel_coord = np.array([int(i) for i in x_rot])
+        y_pixel_coord = np.array([int(i) for i in y_rot])
+        type_minutiae = minutiae[0][:, 2]
+        if show:
+                plt.plot(x_pixel_coord, y_pixel_coord, 'bo')
+                plt.show()
+        
+        return np.column_stack((x_pixel_coord, y_pixel_coord, type_minutiae)), np.column_stack((x_rot, y_rot))
+
+def translation_minutiae(minutiae, translation):
+        x = minutiae[1][:, 0]
+        y = minutiae[1][:, 1]
+        x_pixel_coord = x + translation[:,0]
+        y_pixel_coord = y + translation[:,1]
+        type_minutiae = minutiae[0][:, 2]
+        return np.column_stack((x_pixel_coord, y_pixel_coord, type_minutiae)), np.column_stack((x_pixel_coord, y_pixel_coord))
+
+
 
 def is_point_in_sector(x, y, theta1, theta2):
     """
@@ -67,13 +99,10 @@ def is_point_in_sector(x, y, theta1, theta2):
     else:  # The sector crosses the x-axis
         return theta >= theta1 or theta <= theta2
 
-def plot_line(x1, y1, x2, y2, color='k'):
-        plt.plot([x1, x2], [y1, y2], color)
-
 def distance(p1, p2):
         return sqrt((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2)
 
-def remove_border_minutiae(minutiae, thin, pourcentage = 4/5, plot = True):
+def remove_border_minutiae(minutiae, thin, pourcentage = 4/5, plot = False):
         """
         Removes minutiae that are too close to the border of a fingerprint image.
 
@@ -88,7 +117,6 @@ def remove_border_minutiae(minutiae, thin, pourcentage = 4/5, plot = True):
         - (numpy.ndarray) A 2D array of the remaining minutiae after border minutiae have been removed.
         """
         minutiae_without_border = []
-
         # compute the center of the fingerprint with thin image
         i_sum, j_sum = 0, 0
         n_i, n_j = 0, 0
@@ -153,6 +181,89 @@ def remove_border_minutiae(minutiae, thin, pourcentage = 4/5, plot = True):
 
 
 
+def ressemblance(cloud1,cloud2,threshold, sensibility = 5):
+        """Gives a pourcentage (between 0&1) of ressemblance between two clouds
+
+        Args:
+            cloud1 (array): cloud of points 1, the reference
+            cloud2 (array): cloud of points 2
+            threshold (float): distance under which points are considered to match
+            sensibility (int, optional): number of match above which fingerprint is considered to match . Defaults to 5.
+
+        Returns:
+            _type_: _description_
+        """
+        points_proches = []
+        for point in cloud1:
+                k_point, dist = find_closest_point(point, cloud2)
+                if dist < threshold:
+                        points_proches.append(k_point)
+        
+        n_res = len(points_proches)
+        n_points = min(len(cloud1),len(cloud2))
+        ratio = (n_res/n_points)*sensibility
+
+        if ratio > 1:
+                ratio = 1
+        l_matches = [0,1,2,3,4,5]
+        return ratio
+
+def find_closest_point(point, cloud):
+        distance_min = distance(point, cloud[0])
+        k_min = 0
+        for k, point_1 in enumerate(cloud):
+                distance_1 = distance(point, point_1)
+                if distance_1 < distance_min:
+                        distance_min = distance_1
+                        k_min = k
+                elif distance_1 == distance_min:
+                        k_min = rd.choice([k, k_min])
+        return k_min, distance_min
+
+def compare_minutiaes(cloud_ref, cloud1, method):
+        # Initialisation of variables and choice of reference cloud point.
+        if len(cloud_ref) < len(cloud1):
+                cloud_ref, cloud1 = cloud1, cloud_ref
+        cloud_ref = np.array(cloud_ref)
+        cloud1 = np.array(cloud1)
+        points_ref = cloud_ref[:, :2]
+        points_1 = cloud1[:, :2]
+        centre = np.mean(points_ref, axis = 0)
+
+        # find the closest point in cloud1 for each point in cloud_ref
+        l_closest_points = []
+        for point_ref in points_ref:
+                k_1, distance_min = find_closest_point(point_ref, points_1)
+                l_closest_points.append([points_1[k_1], point_ref, distance_min, k_1])
+        l_closest_points = np.array(l_closest_points)
+
+        # create the translation that reduces the minimal distances
+        if method == 'translation':
+                translation = np.mean(l_closest_points[:, 0] - l_closest_points[:, 1], axis = 0)
+
+        # create the rotation the reduces the minimal distances
+        elif method == 'rotation':
+                l_angles_rotation = []
+                for points in l_closest_points[:, :2]:
+                        l = distance(points[0], centre)
+                        norme = points[2]
+                        c1 = points[0][0]
+                        c2 = points[0][1]
+                        l_ortho = [-c1/l, c2/l]
+                        vecteur = [points[1][0]-points[0][0], points[1][1]-points[0][1]]
+                        sp = vecteur[0]*l_ortho[0] + vecteur[1]*l_ortho[1]
+                        l_angles_rotation.append(atan2(sp,l))
+                l_angles_rotation = np.array(l_angles_rotation)
+                angle = np.mean(l_angles_rotation)
+        else :
+                print("erreur, this method doesn't exist, ask for 'translation' or 'rotation' please")
+        
+        return translation, angle, l_closest_points
+
+
+
+
+
 
 
 ###################################    GLOBAL VARIABLES     ##################################################################################################
@@ -180,12 +291,11 @@ n = 3   # number of files per fingerprint folder
 ##############################################################################################################################################################
 
 
-[l_input, l_normalized, l_segmented, l_orientation, l_gabor, l_thin, l_minutias, l_singularities] = extract_data(folders_dtb[2])
-remove_border_minutiae(l_minutias, l_thin, pourcentage = 4/5)
+[l_input, l_normalized, l_segmented, l_orientation, l_gabor, l_thin, l_minutias, l_singularities] = extract_data(folders_dtb[5])
+minutiae = [remove_border_minutiae(l_minutias[0], l_thin, pourcentage = 3/4), remove_border_minutiae(l_minutias[1], l_thin, pourcentage = 3/4)]
 
-
-
-
+print(minutiae)
+print(rotation_minutiae(minutiae, pi/20, [0,0], show = True))
 
 
 

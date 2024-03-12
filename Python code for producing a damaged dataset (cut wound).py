@@ -69,8 +69,8 @@ def process_dataset(input_dir, output_dir):
                 print(f"Failed to read image: {file_name}")
 
 # Defining the input and output directories
-input_directory = r'C:\Users\PREDATOR\Desktop\Newest data science project\New folder\DB1_B' # To be changed in your computer
-output_directory = r'C:\Users\PREDATOR\Desktop\Newest data science project\New folder\Output' # To be changed in your computer
+input_directory = r'./dataset_healthy_tests/DB1_B' # To be changed in your computer
+output_directory = r'./dataset_healthy_tests/Output' # To be changed in your computer
 
 # Calling the main function to process the dataset and giving us the results
 process_dataset(input_directory, output_directory)

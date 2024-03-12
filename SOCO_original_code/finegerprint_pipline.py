@@ -64,12 +64,13 @@ if __name__ == '__main__':
 
     # open images
     img_dir = './SOCO_original_code/sample_inputs/*'
+    damaged_img_dir = './dataset_healthy_tests/Output/*'
     output_dir = './SOCO_original_code/output/'
     def open_images(directory):
         images_paths = glob(directory)
         return np.array([cv.imread(img_path,0) for img_path in images_paths])
 
-    images = open_images(img_dir)
+    images = open_images(damaged_img_dir)
     
     # image pipeline
     os.makedirs(output_dir, exist_ok=True)

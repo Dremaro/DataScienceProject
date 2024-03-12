@@ -63,8 +63,13 @@ def calculate_minutiaes(im, kernel_size=3):
         for j in range(1, y - kernel_size//2):
             minutiae = minutiae_at(biniry_image, j, i, kernel_size)
             if minutiae != "none":
-                coord_minutiae.append((i, j, minutiae))
                 cv.circle(result, (i,j), radius=2, color=colors[minutiae], thickness=2)
-    
+                if minutiae == "ending":
+                    minutiae = 1
+                elif minutiae == "bifurcation":
+                    minutiae = 3
+                coord_minutiae.append([i, j, minutiae])
+    coord_minutiae = np.array(coord_minutiae)
+    coord_minutiae = [coord_minutiae, coord_minutiae[:, :2]]  # adding a second vector to perform rotations and translations on it
 
     return (result, coord_minutiae)

@@ -24,16 +24,16 @@ def write_list_to_file(my_list, filename):
             # f.write("%s\n" % item)
             f.write(str(item)+'\n')
 
-def turn_minutiae2numbers(minutiae):
-    new_minutiae = []
-    for point in minutiae:
-        new_point=[point[0], point[1], point[2]]
-        if new_point[2] == 'ending':
-            new_point[2] = 1
-        elif new_point[2] == 'bifurcation':
-            new_point[2] = 3
-        new_minutiae.append(new_point)
-    return new_minutiae
+# def turn_minutiae2numbers(minutiae):
+#     new_minutiae = []
+#     for point in minutiae:
+#         new_point=[point[0], point[1], point[2]]
+#         if new_point[2] == 'ending':
+#             new_point[2] = 1
+#         elif new_point[2] == 'bifurcation':
+#             new_point[2] = 3
+#         new_minutiae.append(new_point)
+#     return new_minutiae
         
     
 
@@ -81,14 +81,13 @@ def fingerprint_pipline(input_img):
     (minutias, coordminutias) = calculate_minutiaes(thin_image)
 
     # singularities
-    singularities_img = calculate_singularities(thin_image, angles, 1, block_size, mask)
+    singularities_img, data_singularities = calculate_singularities(thin_image, angles, 1, block_size, mask)
 
 
 
     # visualize pipeline stage by stage
     output_imgs = [input_img, normalized_img, segmented_img, orientation_img, gabor_img, thin_image, minutias, singularities_img]
-    print(output_imgs[6])
-    output_data = [coordminutias, angles, thin_image]
+    output_data = [coordminutias, angles, thin_image, data_singularities]
     
     # for i in range(len(output_imgs)):
     #     if len(output_imgs[i].shape) == 2:
@@ -129,12 +128,14 @@ if __name__ == '__main__':
             os.makedirs(img_output_dir, exist_ok=True)
 
             output_imgs, output_data = fingerprint_pipline(img)  # extracting treated data
-            [minutiaes, angles, thin_image] = output_data        # attributing data to variables
-            minutiaes = turn_minutiae2numbers(minutiaes)         # turning minutiae type to numbers (ending=1, bifurcation=3)
-
+            [minutiaes, angles, thin_image, data_singularities] = output_data        # attributing data to variables
+            print(data_singularities)
+            
             cv.imwrite(os.path.join(img_output_dir, '8_im.png'), output_imgs[datalink['minutias']])
             # write_list_to_file(minutiaes, os.path.join(img_output_dir, 'minutiaes.txt'))
-            np.savetxt(os.path.join(img_output_dir, '6_minutiaes.txt') , np.array(minutiaes))
+            np.savetxt(os.path.join(img_output_dir, '7_singularities.txt'), data_singularities)
+            np.savetxt(os.path.join(img_output_dir, '6_0_minutiaes.txt') , minutiaes[0])
+            np.savetxt(os.path.join(img_output_dir, '6_1_minutiaes.txt') , minutiaes[1])
             np.savetxt(os.path.join(img_output_dir, '3_angles.txt'), angles)
             np.savetxt(os.path.join(img_output_dir, '5_thin_image.txt'), thin_image)
         
@@ -151,11 +152,12 @@ if __name__ == '__main__':
 
             output_imgs, output_data = fingerprint_pipline(img)
             [minutiaes, angles, thin_image] = output_data
-            minutiaes = turn_minutiae2numbers(minutiaes)
+            
 
             cv.imwrite(output_match_dir+'8_2match_im.png', output_imgs[datalink['minutias']])
             # write_list_to_file(minutiaes, output_match_dir+'2match_minutiae.txt')
-            np.savetxt(output_match_dir+'6_2match_minutiae.txt', np.array(minutiaes))
+            np.savetxt(output_match_dir+'6_0_2match_minutiae.txt', minutiaes[0])
+            np.savetxt(output_match_dir+'6_1_2match_minutiae.txt', minutiaes[1])
             np.savetxt(output_match_dir+'3_2match_angles.txt', angles)
             np.savetxt(output_match_dir+'5_2match_thin_image.txt', thin_image)
 
