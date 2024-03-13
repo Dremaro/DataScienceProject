@@ -129,17 +129,14 @@ if __name__ == '__main__':
 
             output_imgs, output_data = fingerprint_pipline(img)  # extracting treated data
             [minutiaes, angles, thin_image, data_singularities] = output_data        # attributing data to variables
-            print(data_singularities)
             
             cv.imwrite(os.path.join(img_output_dir, '8_im.png'), output_imgs[datalink['minutias']])
             # write_list_to_file(minutiaes, os.path.join(img_output_dir, 'minutiaes.txt'))
             np.savetxt(os.path.join(img_output_dir, '7_singularities.txt'), data_singularities)
-            np.savetxt(os.path.join(img_output_dir, '6_0_minutiaes.txt') , minutiaes[0])
-            np.savetxt(os.path.join(img_output_dir, '6_1_minutiaes.txt') , minutiaes[1])
+            np.savetxt(os.path.join(img_output_dir, '6_minutiaes.txt') , minutiaes)
             np.savetxt(os.path.join(img_output_dir, '3_angles.txt'), angles)
             np.savetxt(os.path.join(img_output_dir, '5_thin_image.txt'), thin_image)
         
-
         ################ create fingerprint2match ################
         print('Creating fingerprint2match')
         #open image
@@ -149,16 +146,13 @@ if __name__ == '__main__':
         # image pipeline
         os.makedirs(output_match_dir, exist_ok=True)
         for i, img in enumerate(tqdm(images)):
-
             output_imgs, output_data = fingerprint_pipline(img)
             [minutiaes, angles, thin_image, data_singularities] = output_data
             
-
             cv.imwrite(output_match_dir+'8_2match_im.png', output_imgs[datalink['minutias']])
             # write_list_to_file(minutiaes, output_match_dir+'2match_minutiae.txt')
             np.savetxt(output_match_dir+'7_2match_singularities.txt', data_singularities)
-            np.savetxt(output_match_dir+'6_0_2match_minutiae.txt', minutiaes[0])
-            np.savetxt(output_match_dir+'6_1_2match_minutiae.txt', minutiaes[1])
+            np.savetxt(output_match_dir+'6_2match_minutiae.txt', minutiaes)
             np.savetxt(output_match_dir+'3_2match_angles.txt', angles)
             np.savetxt(output_match_dir+'5_2match_thin_image.txt', thin_image)
 

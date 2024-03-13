@@ -14,7 +14,7 @@ import ast  # ast is used to parse strings and find python expressions in them
 #####################################    FUNCTIONS     #######################################################################################################
 ##############################################################################################################################################################
 
-def extract_data(img_folder, l_content=[3, 5, 6, 7, 8]):
+def extract_data(img_folder, l_content=[3, 5, 6, 7]):
         l_input = []
         l_normalized = []
         l_segmented = []
@@ -26,21 +26,19 @@ def extract_data(img_folder, l_content=[3, 5, 6, 7, 8]):
         l_outputs = [l_input, l_normalized, l_segmented, l_orientation, l_gabor, l_thin, l_minutias, l_singularities]
 
         files_pathnames = glob(img_folder+'/*')
+        print(files_pathnames)
         for i in range(len((l_outputs))):
                 if i in l_content:
                         k = l_content.index(i)
                         l = np.loadtxt(files_pathnames[k])
-                        if i == 6 or i == 7:  # minutias are composed of two files... then singularities is number 8 in folder, but still 7 in l_outputs
-                                l_minutias.append(l)
-                        else:
-                                l_outputs[i] = l
+                        l_outputs[i] = l
         return l_outputs
 
 
 
 def rotation_minutiae(minutiae, angle, rotation_center, show = False):
-        x = minutiae[1][:, 0]
-        y = minutiae[1][:, 1]
+        x = minutiae[:, 0]
+        y = minutiae[:, 1]
         if show:
                 plt.plot(x, y, 'ro')
                 plt.gca().invert_yaxis()
@@ -51,12 +49,12 @@ def rotation_minutiae(minutiae, angle, rotation_center, show = False):
         y_rot = x1*sin(angle) + y1*cos(angle) + rotation_center[1]
         x_pixel_coord = np.array([int(i) for i in x_rot])
         y_pixel_coord = np.array([int(i) for i in y_rot])
-        type_minutiae = minutiae[0][:, 2]
+        type_minutiae = minutiae[:, 2]
         if show:
                 plt.plot(x_pixel_coord, y_pixel_coord, 'bo')
                 plt.show()
         
-        return np.column_stack((x_pixel_coord, y_pixel_coord, type_minutiae)), np.column_stack((x_rot, y_rot))
+        return np.column_stack((x_pixel_coord, y_pixel_coord, type_minutiae))
 
 def translation_minutiae(minutiae, translation):
         x = minutiae[1][:, 0]
@@ -103,7 +101,7 @@ def is_point_in_sector(x, y, theta1, theta2):
 def distance(p1, p2):
         return sqrt((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2)
 
-def remove_border_minutiae(minutiae, thin, pourcentage = 4/5, n_sectors = 20, plot = False):
+def remove_border_minutiae_and_center(minutiae, thin, singularities, angles, pourcentage = 4/5, n_sectors = 20, plot = False):
         """
         Removes minutiae that are too close to the border of a fingerprint image.
 
@@ -128,11 +126,18 @@ def remove_border_minutiae(minutiae, thin, pourcentage = 4/5, n_sectors = 20, pl
                                 j_sum += j
                                 n_i += 1
                                 n_j += 1
+
+        
         # Centering the data around the center of the fingerprint
+        if plot:
+                x = minutiae[:,0]
+                y = minutiae[:,1]
+                plt.plot(x, y, 'ko')
         i_center = int(i_sum/n_i)
         j_center = int(j_sum/n_j)
-        minutiae[:, 0] = minutiae[:, 0] - i_center
-        minutiae[:, 1] = minutiae[:, 1] - j_center
+        print(angles)
+        minutiae[:, 0] = minutiae[:, 0] - j_center
+        minutiae[:, 1] = minutiae[:, 1] - i_center
         
         # define the number of sectors and the half angle of each sector
         l_theta = np.linspace(0,360,n_sectors)[:-1]*pi/180
@@ -152,7 +157,7 @@ def remove_border_minutiae(minutiae, thin, pourcentage = 4/5, n_sectors = 20, pl
                 angle_sup = theta+delta
                 if plot:
                        plt.plot([0,r*cos(angle_min)], [0, r*sin(angle_min)])
-                       plt.plot([0,r*cos(angle_sup)], [0, r*sin(angle_sup)])
+                       #plt.plot([0,r*cos(angle_sup)], [0, r*sin(angle_sup)])
 
                 # finding the minutiae inside the sector
                 for k in range(len(minutiae)):
@@ -241,6 +246,7 @@ def compare_minutiaes(cloud_ref, cloud1, method):
         # create the translation that reduces the minimal distances
         if method == 'translation':
                 translation = np.mean(l_closest_points[:, 0] - l_closest_points[:, 1], axis = 0)
+                return translation, l_closest_points
 
         # create the rotation the reduces the minimal distances
         elif method == 'rotation':
@@ -256,47 +262,68 @@ def compare_minutiaes(cloud_ref, cloud1, method):
                         l_angles_rotation.append(atan2(sp,l))
                 l_angles_rotation = np.array(l_angles_rotation)
                 angle = np.mean(l_angles_rotation)
+                return angle, l_closest_points
         else :
                 print("erreur, this method doesn't exist, ask for 'translation' or 'rotation' please")
-        
-        return translation, angle, l_closest_points
+                return None
 
 
 
 
+def match_fingerprints(lo, lo2m):
+        minutiae = remove_border_minutiae_and_center(lo[d['minutias']],
+                                                     lo[d['thin']],
+                                                     lo[d['singularities']],
+                                                     lo[d['orientation']], pourcentage = 4/5, n_sectors=20, plot = True)
+        minutiae2match = remove_border_minutiae_and_center(lo2m[d['minutias']],
+                                                           lo2m[d['thin']],
+                                                           lo2m[d['singularities']],
+                                                           lo2m[d['orientation']], pourcentage = 4/5, n_sectors=20, plot = True)
+
+        # faire matcher les singularités
+        coord_sing_2m = lo2m[d['singularities']][:, :2]
+        coord_sing = lo[d['singularities']][:, :2]
+
+
+        # faire matcher les angles
+
+        # faire matcher les minutias
+        action, l_closest_points = compare_minutiaes(minutiae, minutiae2match, 'translation')
 
 
 
 ###################################    GLOBAL VARIABLES     ##################################################################################################
 ##############################################################################################################################################################
 
-datalink = {'input':0,
-            'normalized':1,
-            'segmented':2,
-            'orientation':3,
-            'gabor':4,
-            'thin':5,
-            'minutias':6,
-            'singularities':7}
+d = {'input':0,
+     'normalized':1,
+     'segmented':2,
+     'orientation':3,
+     'gabor':4,
+     'thin':5,
+     'minutias':6,
+     'singularities':7}
 
-file_2match = './Z_fingerprint2mach/*'
-files_2match = glob(file_2match)
+
+folder_2match = './Z_fingerprint2match'
+
 compare_dtb = './Zd_fingerprint_dtb/*'
 folders_dtb = glob(compare_dtb)
-n = 3   # number of files per fingerprint folder
-
-
+print(folders_dtb)
 
 
 #########################################    MAIN     ########################################################################################################
 ##############################################################################################################################################################
 
+lo2m = extract_data(folder_2match)
+lo = extract_data(folders_dtb[0])
 
-[l_input, l_normalized, l_segmented, l_orientation, l_gabor, l_thin, l_minutias, l_singularities] = extract_data(folders_dtb[5])
-minutiae = [remove_border_minutiae(l_minutias[0], l_thin, pourcentage = 4/5, n_sectors=30, plot = True), remove_border_minutiae(l_minutias[1], l_thin, pourcentage = 4/5, n_sectors=30)]
+match_fingerprints(lo, lo2m)
 
-print(minutiae)
-print(rotation_minutiae(minutiae, pi/20, [0,0]))
+
+# rot_minu = rotation_minutiae(minutiae, pi, [0,0])
+
+# print(ressemblance(minutiae, rot_minu, 20))
 
 
 

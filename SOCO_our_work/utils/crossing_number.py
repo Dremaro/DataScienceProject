@@ -70,6 +70,6 @@ def calculate_minutiaes(im, kernel_size=3):
                     minutiae = 3
                 coord_minutiae.append([i, j, minutiae])
     coord_minutiae = np.array(coord_minutiae)
-    coord_minutiae = [coord_minutiae, coord_minutiae[:, :2]]  # adding a second vector to perform rotations and translations on it
+    #coord_minutiae = [coord_minutiae, coord_minutiae[:, :2]]  # adding a second vector to perform rotations and translations on it
 
     return (result, coord_minutiae)
