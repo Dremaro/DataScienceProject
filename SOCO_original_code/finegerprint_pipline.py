@@ -11,6 +11,7 @@ from utils import orientation
 from utils.crossing_number import calculate_minutiaes
 from tqdm import tqdm
 from utils.skeletonize import skeletonize
+import matplotlib.pyplot as plt
 
 
 def fingerprint_pipline(input_img):
@@ -33,7 +34,8 @@ def fingerprint_pipline(input_img):
     # orientations
     angles = orientation.calculate_angles(normalized_img, W=block_size, smoth=False)
     orientation_img = orientation.visualize_angles(segmented_img, mask, angles, W=block_size)
-
+    plt.imshow(orientation_img, cmap='hot')
+    plt.show()
     # find the overall frequency of ridges in Wavelet Domain
     freq = ridge_freq(normim, mask, angles, block_size, kernel_size=5, minWaveLength=5, maxWaveLength=15)
 
@@ -61,6 +63,14 @@ def fingerprint_pipline(input_img):
 
 if __name__ == '__main__':
     
+    # minimum_mean_distance = 5
+    # threshold = 0.1
+
+    # # deciding whether fingerprints mache:
+    # if minimum_mean_distance < threshold:
+    #     print('Fingerprints match')
+    # else:
+    #     print('Fingerprints do not match')
 
     # open images
     img_dir = './SOCO_original_code/sample_inputs/*'
@@ -70,7 +80,7 @@ if __name__ == '__main__':
         images_paths = glob(directory)
         return np.array([cv.imread(img_path,0) for img_path in images_paths])
 
-    images = open_images(damaged_img_dir)
+    images = open_images(img_dir)
     
     # image pipeline
     os.makedirs(output_dir, exist_ok=True)

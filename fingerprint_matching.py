@@ -36,33 +36,39 @@ def extract_data(img_folder, l_content=[3, 5, 6, 7]):
 
 
 
-def rotation_minutiae(minutiae, angle, rotation_center, show = False):
+def rotation_minutiae(minutiae, angle, rotation_center, show = False, color1 = 'ro', color2 = 'bo'):
         x = minutiae[:, 0]
         y = minutiae[:, 1]
         if show:
-                plt.plot(x, y, 'ro')
+                plt.plot(x, y, color1)
                 plt.gca().invert_yaxis()
         x1 = x - rotation_center[0]
-        y1 = y - rotation_center[1]
+        y1 = y - rotation_center[1] 
         # multplication by the rotation matrix
         x_rot = x1*cos(angle) - y1*sin(angle) + rotation_center[0]
         y_rot = x1*sin(angle) + y1*cos(angle) + rotation_center[1]
-        x_pixel_coord = np.array([int(i) for i in x_rot])
-        y_pixel_coord = np.array([int(i) for i in y_rot])
+        x_pixel_coord = np.array(x_rot)
+        y_pixel_coord = np.array(y_rot)
         type_minutiae = minutiae[:, 2]
         if show:
-                plt.plot(x_pixel_coord, y_pixel_coord, 'bo')
-                plt.show()
+                plt.plot(x_pixel_coord, y_pixel_coord, color2)
+                plt.plot(rotation_center[0], rotation_center[1], color2[:-1]+'+') # the center of rotation
+                #plt.show()
+                ksle = 0
         
         return np.column_stack((x_pixel_coord, y_pixel_coord, type_minutiae))
 
-def translation_minutiae(minutiae, translation):
-        x = minutiae[1][:, 0]
-        y = minutiae[1][:, 1]
-        x_pixel_coord = x + translation[:,0]
-        y_pixel_coord = y + translation[:,1]
-        type_minutiae = minutiae[0][:, 2]
-        return np.column_stack((x_pixel_coord, y_pixel_coord, type_minutiae)), np.column_stack((x_pixel_coord, y_pixel_coord))
+def translation_minutiae(minutiae, translation, show = False, color = 'b+'):
+        translation = np.array(translation)
+        x = minutiae[:, 0]
+        y = minutiae[:, 1]
+        x_pixel_coord = [x[i] + translation[0] for i in range(x.shape[0])]
+        y_pixel_coord = [y[i] + translation[1] for i in range(y.shape[0])]
+        type_minutiae = minutiae[:, 2]
+        if show:
+                plt.plot(x_pixel_coord, y_pixel_coord, color)
+                plt.gca().invert_yaxis()
+        return np.column_stack((x_pixel_coord, y_pixel_coord, type_minutiae))
 
 
 
@@ -181,6 +187,10 @@ def remove_border_minutiae_and_center(minutiae, thin, singularities, angles, pou
                 x_borderless = [i[0] for i in minutiae_without_border]
                 y_borderless = [i[1] for i in minutiae_without_border]
                 plt.plot(x_borderless, y_borderless, 'bo')
+                plt.ylabel('x pixels (rows)')
+                plt.xlabel('y pixels (columns)')
+                plt.title('Removing border minutiae presentation')
+                plt.grid()
                 plt.show()
 
         return np.array(minutiae_without_border)
@@ -246,17 +256,17 @@ def compare_minutiaes(cloud_ref, cloud1, method):
         # create the translation that reduces the minimal distances
         if method == 'translation':
                 translation = np.mean(l_closest_points[:, 0] - l_closest_points[:, 1], axis = 0)
-                return translation, l_closest_points
+                return -translation, l_closest_points
 
         # create the rotation the reduces the minimal distances
         elif method == 'rotation':
                 l_angles_rotation = []
                 for points in l_closest_points[:, :2]:
                         l = distance(points[0], centre)
-                        norme = points[2]
+                        #norme = points[2]
                         c1 = points[0][0]
                         c2 = points[0][1]
-                        l_ortho = [-c1/l, c2/l]
+                        l_ortho = [-c2/l, c1/l]
                         vecteur = [points[1][0]-points[0][0], points[1][1]-points[0][1]]
                         sp = vecteur[0]*l_ortho[0] + vecteur[1]*l_ortho[1]
                         l_angles_rotation.append(atan2(sp,l))
@@ -274,15 +284,15 @@ def match_fingerprints(lo, lo2m):
         minutiae = remove_border_minutiae_and_center(lo[d['minutias']],
                                                      lo[d['thin']],
                                                      lo[d['singularities']],
-                                                     lo[d['orientation']], pourcentage = 4/5, n_sectors=20, plot = True)
+                                                     lo[d['orientation']], pourcentage = 4/5, n_sectors=8, plot = True)
         minutiae2match = remove_border_minutiae_and_center(lo2m[d['minutias']],
                                                            lo2m[d['thin']],
                                                            lo2m[d['singularities']],
-                                                           lo2m[d['orientation']], pourcentage = 4/5, n_sectors=20, plot = True)
+                                                           lo2m[d['orientation']], pourcentage = 4/5, n_sectors=8, plot = True)
 
         # faire matcher les singularités
-        coord_sing_2m = lo2m[d['singularities']][:, :2]
-        coord_sing = lo[d['singularities']][:, :2]
+        #coord_sing_2m = lo2m[d['singularities']][:, :2]
+        #coord_sing = lo[d['singularities']][:, :2]
 
 
         # faire matcher les angles
@@ -318,7 +328,40 @@ print(folders_dtb)
 lo2m = extract_data(folder_2match)
 lo = extract_data(folders_dtb[0])
 
-match_fingerprints(lo, lo2m)
+#match_fingerprints(lo, lo2m)
+
+minutias = lo[d['minutias']]
+minutias_bl = remove_border_minutiae_and_center(minutias, lo[d['thin']], lo[d['singularities']], lo[d['orientation']], pourcentage = 3/5, n_sectors=26, plot = True)
+
+# configuration initiale
+x = minutias_bl[:, 0]
+y = minutias_bl[:, 1]
+plt.plot(x, y, 'ko')
+plt.gca().invert_yaxis()
+
+# perturbation
+pert_minutia = rotation_minutiae(minutias_bl, pi/6, [0,0])
+pert_minutia = translation_minutiae(pert_minutia, [10, 10], show = True, color = 'b+')
+
+
+# retour à l'origine
+angle = compare_minutiaes(minutias_bl, pert_minutia, 'rotation')[0]
+pert_minutia = rotation_minutiae(pert_minutia, angle, [0,0], show=True, color1 = 'b+', color2 = 'mo')
+
+translation = compare_minutiaes(minutias_bl, pert_minutia, 'translation')[0]
+pert_minutia = translation_minutiae(pert_minutia, translation, show = True, color = 'ko')
+
+angle = compare_minutiaes(minutias_bl, pert_minutia, 'rotation')[0]
+pert_minutia = rotation_minutiae(pert_minutia, angle, [0,0], show = True, color1 = 'ro', color2 = 'yo')
+
+#translation = compare_minutiaes(minutias_bl, pert_minutia, 'translation')[0]
+#pert_minutia = translation_minutiae(pert_minutia, translation, show = True, color = 'go')
+
+plt.ylabel('x pixels (rows)')
+plt.xlabel('y pixels (columns)')
+plt.title('Minimization of the distance between two clouds of minutiae')
+plt.grid()
+plt.show()
 
 
 # rot_minu = rotation_minutiae(minutiae, pi, [0,0])
